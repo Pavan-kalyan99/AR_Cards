@@ -2,138 +2,98 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>AR Real Estate — Debug Version</title>
-
-  <!-- A-Frame, AR.js, GSAP -->
+  <title>AR Real Estate — Stable</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
   <style>
     body, html { margin:0; height:100%; overflow:hidden; font-family: sans-serif; }
     #overlay { position: absolute; left:10px; top:10px; z-index:9999;
                background: rgba(0,0,0,0.7); color: #fff; padding:8px 10px; border-radius:8px; }
-    #hint { position: absolute; left:50%; transform:translateX(-50%); bottom:14px; z-index:9999;
-           background: rgba(255,255,255,0.9); padding:8px 12px; border-radius:8px; color:#111; }
-    #check { position: fixed; right:10px; bottom:10px; z-index:9999; background:rgba(0,0,0,0.6);
-            color:#fff; padding:8px; border-radius:8px; font-size:13px; }
   </style>
 </head>
 <body>
   <div id="overlay">Status: <strong id="status">initializing</strong></div>
-  <div id="hint">Point camera at the <strong>Hiro</strong> marker. Tap objects to interact.</div>
 
-  <!-- AR Scene -->
-  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-    <!-- Camera + cursor for clicking 3D objects -->
-    <a-entity camera position="0 0 0">
+  <a-scene embedded
+           arjs="sourceType: webcam; debugUIEnabled: false;"
+           vr-mode-ui="enabled: false">
+    <!-- Camera with wider FOV -->
+    <a-entity camera="fov: 70;">
       <a-cursor id="cursor" raycaster="objects: .clickable" fuse="false"
                 material="color: yellow; shader: flat"></a-cursor>
     </a-entity>
 
-    <!-- Marker (Hiro for testing) -->
-    <a-marker preset="hiro" id="marker">
-      <!-- Simple visible box (works reliably) -->
+    <!-- Marker with smoothing enabled -->
+    <a-marker preset="hiro" id="marker"
+              smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="5">
+      <!-- Box as placeholder -->
       <a-box id="house" position="0 0.5 0" width="1.2" height="0.7" depth="0.8" color="#ff8c00"></a-box>
 
-      <!-- 3D button: Call (starts hidden) -->
+      <!-- 3D Buttons -->
       <a-plane id="callBtn" class="clickable" visible="false"
-               position="-0.7 -0.25 0.9" rotation="-25 0 0" width="0.8" height="0.35"
-               material="shader: flat; color: #2ecc71"></a-plane>
-      <a-text value="📞 Call Owner" align="center" position="-0.7 -0.25 0.91" rotation="-25 0 0" color="#fff" width="1.8"></a-text>
+               position="-0.7 -0.25 0.9" rotation="-25 0 0"
+               width="0.8" height="0.35" material="shader: flat; color: #2ecc71"></a-plane>
+      <a-text value="📞 Call Owner" align="center" position="-0.7 -0.25 0.91"
+              rotation="-25 0 0" color="#fff" width="1.8"></a-text>
 
-      <!-- 3D button: Website -->
       <a-plane id="siteBtn" class="clickable" visible="false"
-               position="0.7 -0.25 0.9" rotation="-25 0 0" width="0.8" height="0.35"
-               material="shader: flat; color: #3498db"></a-plane>
-      <a-text value="🌐 View Listing" align="center" position="0.7 -0.25 0.91" rotation="-25 0 0" color="#fff" width="1.8"></a-text>
+               position="0.7 -0.25 0.9" rotation="-25 0 0"
+               width="0.8" height="0.35" material="shader: flat; color: #3498db"></a-plane>
+      <a-text value="🌐 View Listing" align="center" position="0.7 -0.25 0.91"
+              rotation="-25 0 0" color="#fff" width="1.8"></a-text>
     </a-marker>
   </a-scene>
 
-  <div id="check">
-    <div style="font-weight:600">Quick checklist</div>
-    <div>• Serve page via HTTPS or open via <code>localhost</code> (camera required).<br>
-    • Allow camera permission in browser.<br>
-    • Use Chrome on Android (recommended) or Safari on iOS.<br>
-    • Hiro marker: <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/three.js/data/images/HIRO.jpg" target="_blank" style="color:#9cf">download</a>.</div>
-  </div>
-
   <script>
-    (function () {
-      const marker = document.querySelector('#marker');
-      const statusEl = document.getElementById('status');
-      const hint = document.getElementById('hint');
+    const marker = document.querySelector('#marker');
+    const statusEl = document.getElementById('status');
 
-      const house = document.getElementById('house');
-      const callBtn = document.getElementById('callBtn');
-      const siteBtn = document.getElementById('siteBtn');
+    const house = document.getElementById('house');
+    const callBtn = document.getElementById('callBtn');
+    const siteBtn = document.getElementById('siteBtn');
 
-      let rotationTween, callTween, siteTween;
+    let rotationTween, callTween, siteTween;
 
-      function showUI() {
-        callBtn.setAttribute('visible', 'true');
-        siteBtn.setAttribute('visible', 'true');
-        hint.style.display = 'none';
+    function showUI() {
+      callBtn.setAttribute('visible', 'true');
+      siteBtn.setAttribute('visible', 'true');
+    }
+    function hideUI() {
+      callBtn.setAttribute('visible', 'false');
+      siteBtn.setAttribute('visible', 'false');
+    }
+
+    marker.addEventListener('markerFound', () => {
+      statusEl.innerText = 'marker found';
+      showUI();
+
+      if (!rotationTween) {
+        rotationTween = gsap.to(house.object3D.rotation,
+          { y: '+=6.283', duration: 8, repeat: -1, ease: 'linear' });
       }
-      function hideUI() {
-        callBtn.setAttribute('visible', 'false');
-        siteBtn.setAttribute('visible', 'false');
-        hint.style.display = 'block';
+      if (!callTween) {
+        callTween = gsap.to(callBtn.object3D.position,
+          { y: -0.15, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       }
+      if (!siteTween) {
+        siteTween = gsap.to(siteBtn.object3D.position,
+          { y: -0.15, duration: 1.0, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 0.2 });
+      }
+    });
 
-      // Marker events for AR.js markers
-      marker.addEventListener('markerFound', () => {
-        console.log('markerFound');
-        statusEl.innerText = 'marker found';
-        showUI();
-
-        // start animations (only start once)
-        if (!rotationTween) {
-          rotationTween = gsap.to(house.object3D.rotation, { y: '+=6.283', duration: 8, repeat: -1, ease: 'linear' });
-        }
-        if (!callTween) {
-          // small up/down bounce (on local object3D position)
-          callTween = gsap.to(callBtn.object3D.position, { y: -0.15, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-        }
-        if (!siteTween) {
-          siteTween = gsap.to(siteBtn.object3D.position, { y: -0.15, duration: 1.0, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 0.2 });
-        }
-      });
-
-      marker.addEventListener('markerLost', () => {
-        console.log('markerLost');
-        statusEl.innerText = 'marker lost';
-        hideUI();
-
-        // stop & clear tweens so they restart cleanly next time
-        if (rotationTween) { rotationTween.kill(); rotationTween = null; }
-        if (callTween) { callTween.kill(); callTween = null; }
-        if (siteTween) { siteTween.kill(); siteTween = null; }
-      });
-
-      // Click handlers on 3D objects (A-Frame click events triggered by cursor)
-      callBtn.addEventListener('click', (ev) => {
-        console.log('call clicked', ev);
-        // replace phone number with real one
-        window.location.href = 'tel:+1234567890';
-      });
-      siteBtn.addEventListener('click', (ev) => {
-        console.log('site clicked', ev);
-        // open listing in new tab
-        window.open('https://example.com/property', '_blank');
-      });
-
-      // Helpful initial state
+    marker.addEventListener('markerLost', () => {
+      statusEl.innerText = 'marker lost (waiting for stable view)';
       hideUI();
-      statusEl.innerText = 'ready — awaiting marker';
+      if (rotationTween) { rotationTween.kill(); rotationTween = null; }
+      if (callTween) { callTween.kill(); callTween = null; }
+      if (siteTween) { siteTween.kill(); siteTween = null; }
+    });
 
-      // Catch runtime JS errors and show a small message
-      window.addEventListener('error', (e) => {
-        console.error('Runtime error', e);
-        statusEl.innerText = 'JS error — see console';
-      });
-    })();
+    callBtn.addEventListener('click', () => window.location.href = 'tel:+1234567890');
+    siteBtn.addEventListener('click', () => window.open('https://example.com/property', '_blank'));
+
+    hideUI();
   </script>
 </body>
 </html>
-
