@@ -6,54 +6,49 @@
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/3.3.2/aframe/build/aframe-ar.js"></script>
     <style>
       body, html { margin: 0; overflow: hidden; }
-      #info {
+      #ui {
         position: absolute;
-        bottom: 10px;
+        bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0,0,0,0.7);
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 10px;
+        background: #0078ff;
         color: #fff;
-        padding: 8px 16px;
-        border-radius: 12px;
-        font-family: sans-serif;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      }
+      button:hover {
+        background: #005fcc;
       }
     </style>
   </head>
   <body>
-    <!-- Real-time info overlay -->
-    <div id="info">Loading property data...</div>
-
+    <!-- AR Scene -->
     <a-scene embedded arjs>
-      <!-- Marker (use Hiro marker for testing, or replace with your QR marker) -->
+      <!-- Marker (Hiro marker for testing) -->
       <a-marker preset="hiro">
-        <!-- Simple 3D box placeholder for house model -->
+        <!-- House placeholder -->
         <a-box position="0 0.5 0" color="#4CC3D9"></a-box>
 
-        <!-- Dynamic text above the model -->
-        <a-text id="priceText" value="Loading..." color="yellow"
-                position="-1 1.5 0" scale="1.5 1.5 1.5"></a-text>
+        <!-- Label -->
+        <a-text value="Dream Home 🏡" color="yellow" position="-1 1.5 0" scale="1.5 1.5 1.5"></a-text>
       </a-marker>
-
       <a-entity camera></a-entity>
     </a-scene>
 
-    <script>
-      // Simulate real-time property API
-      async function loadPropertyData() {
-        // Replace this with your real API endpoint
-        const fakeApiResponse = await fetch("https://jsonplaceholder.typicode.com/posts/1")
-          .then(res => res.json());
-
-        // Example dynamic content (replace with property price, name, etc.)
-        const dynamicText = "Featured: " + fakeApiResponse.title.slice(0, 20) + "...";
-        
-        // Update AR text
-        document.querySelector("#priceText").setAttribute("value", dynamicText);
-        // Update HTML overlay
-        document.querySelector("#info").innerText = "Property: " + fakeApiResponse.title;
-      }
-
-      loadPropertyData();
-    </script>
+    <!-- Floating UI Buttons -->
+    <div id="ui">
+      <button onclick="window.location.href='tel:+1234567890'">📞 Contact</button>
+      <button onclick="window.location.href='https://example.com/property'">🌐 Website</button>
+      <button onclick="window.location.href='mailto:agent@example.com'">✉️ Email</button>
+    </div>
   </body>
 </html>
