@@ -4,51 +4,49 @@
     <title>AR Real Estate Card</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/3.3.2/aframe/build/aframe-ar.js"></script>
-    <style>
-      body, html { margin: 0; overflow: hidden; }
-      #ui {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 10px;
-      }
-      button {
-        padding: 12px 20px;
-        border: none;
-        border-radius: 10px;
-        background: #0078ff;
-        color: #fff;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-      }
-      button:hover {
-        background: #005fcc;
-      }
-    </style>
   </head>
-  <body>
-    <!-- AR Scene -->
+  <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs>
-      <!-- Marker (Hiro marker for testing) -->
-      <a-marker preset="hiro">
-        <!-- House placeholder -->
-        <a-box position="0 0.5 0" color="#4CC3D9"></a-box>
+      <!-- Camera with cursor (to allow clicking in AR) -->
+      <a-entity camera>
+        <a-cursor
+          fuse="true"
+          fuse-timeout="500"
+          material="color: yellow; shader: flat">
+        </a-cursor>
+      </a-entity>
 
-        <!-- Label -->
-        <a-text value="Dream Home 🏡" color="yellow" position="-1 1.5 0" scale="1.5 1.5 1.5"></a-text>
+      <!-- Marker -->
+      <a-marker preset="hiro">
+        <!-- 3D House Model -->
+        <a-entity gltf-model="url(https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/House/glTF/House.gltf)"
+                  scale="0.5 0.5 0.5"
+                  position="0 0 0">
+        </a-entity>
+
+        <!-- 3D Button: Call -->
+        <a-box id="callBtn" color="green" depth="0.1" height="0.3" width="1"
+               position="0 0.5 1.2">
+        </a-box>
+        <a-text value="📞 Call" color="white" position="-0.4 0.55 1.25" scale="1 1 1"></a-text>
+
+        <!-- 3D Button: Website -->
+        <a-box id="siteBtn" color="blue" depth="0.1" height="0.3" width="1"
+               position="0 -0.1 1.2">
+        </a-box>
+        <a-text value="🌐 Website" color="white" position="-0.5 -0.05 1.25" scale="1 1 1"></a-text>
       </a-marker>
-      <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- Floating UI Buttons -->
-    <div id="ui">
-      <button onclick="window.location.href='tel:+1234567890'">📞 Contact</button>
-      <button onclick="window.location.href='https://example.com/property'">🌐 Website</button>
-      <button onclick="window.location.href='mailto:agent@example.com'">✉️ Email</button>
-    </div>
+    <script>
+      // Add interactivity
+      document.querySelector('#callBtn').addEventListener('click', () => {
+        window.location.href = 'tel:+1234567890'; // dial owner
+      });
+
+      document.querySelector('#siteBtn').addEventListener('click', () => {
+        window.open('https://example.com/property', '_blank'); // open website
+      });
+    </script>
   </body>
 </html>
