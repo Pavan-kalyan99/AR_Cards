@@ -1,51 +1,58 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>AR Real Estate Card</title>
+    <title>AR Real Estate Card with GSAP</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/3.3.2/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   </head>
   <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs>
-      <!-- Camera with cursor (to allow clicking in AR) -->
+      <!-- Camera with cursor -->
       <a-entity camera>
-        <a-cursor
-          fuse="true"
-          fuse-timeout="500"
-          material="color: yellow; shader: flat">
-        </a-cursor>
+        <a-cursor fuse="true" fuse-timeout="500" material="color: yellow; shader: flat"></a-cursor>
       </a-entity>
 
       <!-- Marker -->
-      <a-marker preset="hiro">
+      <a-marker preset="hiro" id="marker">
         <!-- 3D House Model -->
-        <a-entity gltf-model="url(https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/House/glTF/House.gltf)"
-                  scale="0.5 0.5 0.5"
-                  position="0 0 0">
+        <a-entity id="house"
+          gltf-model="url(https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/House/glTF/House.gltf)"
+          scale="0.001 0.001 0.001"
+          position="0 0 0">
         </a-entity>
 
-        <!-- 3D Button: Call -->
+        <!-- 3D Buttons -->
         <a-box id="callBtn" color="green" depth="0.1" height="0.3" width="1"
-               position="0 0.5 1.2">
-        </a-box>
+               position="0 0.5 1.2"></a-box>
         <a-text value="📞 Call" color="white" position="-0.4 0.55 1.25" scale="1 1 1"></a-text>
 
-        <!-- 3D Button: Website -->
         <a-box id="siteBtn" color="blue" depth="0.1" height="0.3" width="1"
-               position="0 -0.1 1.2">
-        </a-box>
+               position="0 -0.1 1.2"></a-box>
         <a-text value="🌐 Website" color="white" position="-0.5 -0.05 1.25" scale="1 1 1"></a-text>
       </a-marker>
     </a-scene>
 
     <script>
-      // Add interactivity
-      document.querySelector('#callBtn').addEventListener('click', () => {
-        window.location.href = 'tel:+1234567890'; // dial owner
+      const house = document.querySelector('#house');
+      const callBtn = document.querySelector('#callBtn');
+      const siteBtn = document.querySelector('#siteBtn');
+
+      // Animate house when marker is found
+      document.querySelector('#marker').addEventListener('markerFound', () => {
+        gsap.to(house.object3D.scale, { x: 0.5, y: 0.5, z: 0.5, duration: 1, ease: "back.out(2)" });
+        gsap.to(house.object3D.rotation, { y: "+=6.28", duration: 5, repeat: -1, ease: "linear" }); // rotate loop
+        gsap.to(callBtn.object3D.position, { y: 0.7, duration: 1, yoyo: true, repeat: -1, ease: "sine.inOut" });
+        gsap.to(siteBtn.object3D.position, { y: 0.1, duration: 1, yoyo: true, repeat: -1, ease: "sine.inOut" });
       });
 
-      document.querySelector('#siteBtn').addEventListener('click', () => {
-        window.open('https://example.com/property', '_blank'); // open website
+      // Button interactions
+      callBtn.addEventListener('click', () => {
+        window.location.href = 'tel:+1234567890';
+      });
+
+      siteBtn.addEventListener('click', () => {
+        window.open('https://example.com/property', '_blank');
       });
     </script>
   </body>
