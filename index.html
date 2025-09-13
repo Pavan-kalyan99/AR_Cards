@@ -2,98 +2,138 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>AR Real Estate — Stable</title>
+  <title>AR Real Estate Card</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <style>
-    body, html { margin:0; height:100%; overflow:hidden; font-family: sans-serif; }
-    #overlay { position: absolute; left:10px; top:10px; z-index:9999;
-               background: rgba(0,0,0,0.7); color: #fff; padding:8px 10px; border-radius:8px; }
+    body, html { margin:0; height:100%; overflow:hidden; }
+    #statusBox {
+      position: absolute; top: 10px; left: 10px; z-index: 9999;
+      background: rgba(0,0,0,0.7); color: #fff; padding: 6px 10px; border-radius: 6px;
+      font-family: sans-serif; font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <div id="overlay">Status: <strong id="status">initializing</strong></div>
+  <div id="statusBox">Status: <span id="status">loading…</span></div>
 
   <a-scene embedded
            arjs="sourceType: webcam; debugUIEnabled: false;"
            vr-mode-ui="enabled: false">
     <!-- Camera with wider FOV -->
     <a-entity camera="fov: 70;">
-      <a-cursor id="cursor" raycaster="objects: .clickable" fuse="false"
+      <a-cursor raycaster="objects: .clickable" fuse="false"
                 material="color: yellow; shader: flat"></a-cursor>
     </a-entity>
 
-    <!-- Marker with smoothing enabled -->
+    <!-- Marker with smoothing -->
     <a-marker preset="hiro" id="marker"
               smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="5">
-      <!-- Box as placeholder -->
-      <a-box id="house" position="0 0.5 0" width="1.2" height="0.7" depth="0.8" color="#ff8c00"></a-box>
 
-      <!-- 3D Buttons -->
+      <!-- House model (auto-resized via component) -->
+      <a-entity id="house"
+        gltf-model="url(https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/House/glTF/House.gltf)"
+        auto-resize>
+      </a-entity>
+
+      <!-- Buttons (start hidden) -->
       <a-plane id="callBtn" class="clickable" visible="false"
-               position="-0.7 -0.25 0.9" rotation="-25 0 0"
                width="0.8" height="0.35" material="shader: flat; color: #2ecc71"></a-plane>
-      <a-text value="📞 Call Owner" align="center" position="-0.7 -0.25 0.91"
-              rotation="-25 0 0" color="#fff" width="1.8"></a-text>
+      <a-text id="callTxt" value="📞 Call Owner" align="center" color="#fff" width="2" visible="false"></a-text>
 
       <a-plane id="siteBtn" class="clickable" visible="false"
-               position="0.7 -0.25 0.9" rotation="-25 0 0"
                width="0.8" height="0.35" material="shader: flat; color: #3498db"></a-plane>
-      <a-text value="🌐 View Listing" align="center" position="0.7 -0.25 0.91"
-              rotation="-25 0 0" color="#fff" width="1.8"></a-text>
+      <a-text id="siteTxt" value="🌐 View Listing" align="center" color="#fff" width="2" visible="false"></a-text>
     </a-marker>
   </a-scene>
 
   <script>
-    const marker = document.querySelector('#marker');
     const statusEl = document.getElementById('status');
-
-    const house = document.getElementById('house');
-    const callBtn = document.getElementById('callBtn');
-    const siteBtn = document.getElementById('siteBtn');
+    const marker = document.querySelector('#marker');
+    const house = document.querySelector('#house');
+    const callBtn = document.querySelector('#callBtn');
+    const siteBtn = document.querySelector('#siteBtn');
+    const callTxt = document.querySelector('#callTxt');
+    const siteTxt = document.querySelector('#siteTxt');
 
     let rotationTween, callTween, siteTween;
 
-    function showUI() {
-      callBtn.setAttribute('visible', 'true');
-      siteBtn.setAttribute('visible', 'true');
-    }
-    function hideUI() {
-      callBtn.setAttribute('visible', 'false');
-      siteBtn.setAttribute('visible', 'false');
-    }
+    // --- Auto-resize component ---
+    AFRAME.registerComponent('auto-resize', {
+      init: function () {
+        this.el.addEventListener('model-loaded', () => {
+          const obj = this.el.getObject3D('mesh');
+          if (!obj) return;
+          const box = new THREE.Box3().setFromObject(obj);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1 / maxDim;   // fit into marker (1 unit)
+          this.el.object3D.scale.set(scale, scale, scale);
 
+          // Place buttons just below the model
+          const yBelow = -size.y * scale / 2 - 0.2;
+          callBtn.object3D.position.set(-0.5, yBelow, 0);
+          callTxt.object3D.position.set(-0.5, yBelow, 0.01);
+
+          siteBtn.object3D.position.set(0.5, yBelow, 0);
+          siteTxt.object3D.position.set(0.5, yBelow, 0.01);
+        });
+      }
+    });
+
+    // --- Marker found/lost handling ---
     marker.addEventListener('markerFound', () => {
-      statusEl.innerText = 'marker found';
+      statusEl.textContent = 'marker found';
       showUI();
 
       if (!rotationTween) {
         rotationTween = gsap.to(house.object3D.rotation,
-          { y: '+=6.283', duration: 8, repeat: -1, ease: 'linear' });
+          { y: '+=6.283', duration: 10, repeat: -1, ease: 'linear' });
       }
       if (!callTween) {
-        callTween = gsap.to(callBtn.object3D.position,
-          { y: -0.15, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        callTween = gsap.to(callBtn.object3D.scale,
+          { x: 1.1, y: 1.1, z: 1.1, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       }
       if (!siteTween) {
-        siteTween = gsap.to(siteBtn.object3D.position,
-          { y: -0.15, duration: 1.0, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 0.2 });
+        siteTween = gsap.to(siteBtn.object3D.scale,
+          { x: 1.1, y: 1.1, z: 1.1, duration: 1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
       }
     });
 
     marker.addEventListener('markerLost', () => {
-      statusEl.innerText = 'marker lost (waiting for stable view)';
+      statusEl.textContent = 'marker lost';
       hideUI();
+
       if (rotationTween) { rotationTween.kill(); rotationTween = null; }
       if (callTween) { callTween.kill(); callTween = null; }
       if (siteTween) { siteTween.kill(); siteTween = null; }
     });
 
-    callBtn.addEventListener('click', () => window.location.href = 'tel:+1234567890');
-    siteBtn.addEventListener('click', () => window.open('https://example.com/property', '_blank'));
+    // --- Show/hide UI ---
+    function showUI() {
+      callBtn.setAttribute('visible', 'true');
+      siteBtn.setAttribute('visible', 'true');
+      callTxt.setAttribute('visible', 'true');
+      siteTxt.setAttribute('visible', 'true');
+    }
+    function hideUI() {
+      callBtn.setAttribute('visible', 'false');
+      siteBtn.setAttribute('visible', 'false');
+      callTxt.setAttribute('visible', 'false');
+      siteTxt.setAttribute('visible', 'false');
+    }
+
+    // --- Button click actions ---
+    callBtn.addEventListener('click', () => {
+      window.location.href = 'tel:+1234567890'; // Replace with real number
+    });
+    siteBtn.addEventListener('click', () => {
+      window.open('https://example.com/property', '_blank'); // Replace with property link
+    });
 
     hideUI();
+    statusEl.textContent = 'ready — point camera at Hiro marker';
   </script>
 </body>
 </html>
